@@ -5,9 +5,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
@@ -19,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 class StarDecoration extends RecyclerView.ItemDecoration {
 
+    public static final String TAG = "JackOu";
     private int headHeight;
     private Paint headPaint;
     private Paint textPaint;
@@ -51,13 +54,17 @@ class StarDecoration extends RecyclerView.ItemDecoration {
                 //获取当前文字
                 int position = parent.getChildAdapterPosition(view);
                 boolean isGroupHead = starAdapter.isGroupHeader(position);
-                if (isGroupHead) {
+                //如果parent有padding值的时候，需要判断top值大于head高度和padding值再绘制
+                if (isGroupHead && view.getTop() - headHeight - parent.getPaddingTop() >= 0) {
                     c.drawRect(left, view.getTop() - headHeight, right, view.getTop(), headPaint);
                     String groupName = starAdapter.getGroupName(position);
                     textPaint.getTextBounds(groupName, 0, groupName.length(), textRect);
                     Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
-                    c.drawText(groupName, left + 20, view.getTop() - (headHeight / 2 + (fontMetrics.descent + fontMetrics.ascent) / 2), textPaint);
-                } else {
+                    //文字标准高度
+                    c.drawText(groupName, left + 20, view.getTop() - headHeight / 2 - (fontMetrics.descent + fontMetrics.ascent) / 2, textPaint);
+                    // 文字粗略高度
+                    // c.drawText(groupName, left + 20, view.getTop() - (float)(headHeight / 2 - textRect.height() /2), textPaint);
+                } else if (view.getTop() - headHeight - parent.getPaddingTop() >= 0) {
                     c.drawRect(left, view.getTop() - 4, right, view.getTop(), headPaint);
                 }
             }
@@ -67,6 +74,39 @@ class StarDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         super.onDrawOver(c, parent, state);
+        if (parent.getAdapter() instanceof StarAdapter) {
+            StarAdapter starAdapter = (StarAdapter) parent.getAdapter();
+            //获取layoutManager获得第一个可见view的位置
+            LinearLayoutManager layoutManager = (LinearLayoutManager) (parent.getLayoutManager());
+            int position = layoutManager.findFirstVisibleItemPosition();
+            Log.e(TAG, "position:" + position);
+            //获取对应的position的view
+            View itemView = parent.findViewHolderForAdapterPosition(position).itemView;
+            int left = parent.getPaddingLeft();
+            int right = parent.getWidth() - parent.getPaddingRight();
+            //用父(RecyclerView)的top作为定端
+            int top = parent.getPaddingTop();
+            //当第二个进入的时候，就需要向上推
+            boolean isGroupHead = starAdapter.isGroupHeader(position + 1);
+            if (isGroupHead) {
+                //如果parent有padding值
+                int bottom = Math.min(headHeight, itemView.getBottom() - parent.getPaddingTop());
+                c.drawRect(left, top, right, top + bottom, headPaint);
+                String groupName = starAdapter.getGroupName(position);
+                textPaint.getTextBounds(groupName, 0, groupName.length(), textRect);
+                Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
+                //父设置了padding字体会被顶上去，使用裁剪工具裁剪
+                c.clipOutRect(left, parent.getPaddingTop() - headHeight, right, parent.getPaddingTop());
+                c.drawText(groupName, left + 20, top + bottom - headHeight / 2 - (fontMetrics.descent + fontMetrics.ascent) / 2, textPaint);
+            } else {
+                c.drawRect(left, top, right, top + headHeight, headPaint);
+                String groupName = starAdapter.getGroupName(position);
+                textPaint.getTextBounds(groupName, 0, groupName.length(), textRect);
+                Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
+                //文字标准高度
+                c.drawText(groupName, left + 20, top + headHeight / 2 - (fontMetrics.descent + fontMetrics.ascent) / 2, textPaint);
+            }
+        }
     }
 
     @Override
