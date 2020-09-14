@@ -30,10 +30,12 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 20; j++) {
-                if (i % 2 == 0) {
-                    starList.add(new Star("何炅" + j, "快乐家族"));
+                if (i % 3 == 0) {
+                    starList.add(new Star("GS" + j, "GS系列"));
+                } else if (i % 3 == 1){
+                    starList.add(new Star("GM" + j, "GM系列"));
                 } else {
-                    starList.add(new Star("汪涵" + j, "天天兄弟"));
+                    starList.add(new Star("GA" + j, "GA系列"));
                 }
             }
         }
